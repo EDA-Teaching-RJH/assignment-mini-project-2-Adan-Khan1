@@ -67,4 +67,17 @@ class PatientRecord:
         self.status = "Pending"
         self.reason = "Awaiting Evaluation"
 
+class UrologyPatient(PatientRecord): 
+    """
+    This subclass will inherit universal traits, adds prostate-specific metrics and NICE logic
+    """
+    def __init__(self, patient_id, raw_text): 
+        super().__init__(patient_id, raw_text) #  This pulls in the ID, age and volume from the Parent class
+        self.gleason = extract_gleason(raw_text)
+        self.psa = extract_psa(raw_text)
+        self.t_stage = extract_t_stage(raw_text)
+        
+        
+    
+
 
