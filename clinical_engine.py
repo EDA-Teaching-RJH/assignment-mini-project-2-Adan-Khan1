@@ -41,5 +41,11 @@ def extract_volume(text):
         return float(match.group(1))
     return None
 
-
-
+def extract_age(text): 
+    """
+    Extracts patient age from the patient transcripts
+    """
+    match = re.search(r"(\d{2})\s*(?:-|year old|yo|y\.o\.)", str(text), re.IGNORECASE)
+    if match: 
+        return int(match.group(1))
+    return None
