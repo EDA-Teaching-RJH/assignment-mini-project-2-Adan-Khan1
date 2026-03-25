@@ -49,3 +49,22 @@ def extract_age(text):
     if match: 
         return int(match.group(1))
     return None
+
+
+# ==========================================
+# BLOCK 2: The Object Oriented Brain
+# ==========================================
+# FEATURE 2: Using the extractors from Block 1 to populate these objects and then apply clinical trial rules to the extracted data
+
+class PatientRecord: 
+    """
+    Handles universal patient data not specific to a single disease
+    """
+    def __init__(self, patient_id, raw_text): # This base class establishes universal traits every patient has
+        self.patient_id = patient_id 
+        self.age = extract_age(raw_text)
+        self.prostate_volume = extract_volume(raw_text)
+        self.status = "Pending"
+        self.reason = "Awaiting Evaluation"
+
+
