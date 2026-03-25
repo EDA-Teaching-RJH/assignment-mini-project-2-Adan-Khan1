@@ -23,3 +23,11 @@ def extract_psa(text):
         return float(match.group(1))
     return None 
 
+def extract_t_stage(text): 
+    """
+    Extracts the clinical T-Stage (ie T1c, T2a or T3 etc)
+    """
+    match = re.search(r"(T[1-4][a-c]?)", str(text), re.IGNORECASE) # T stages are alphanumerical characters with [1-4] limitng the number to valid staging tiers and [a-c]? allows for optional sub-staging if present
+    if match: 
+        return match.group(1).upper()
+    return None 
