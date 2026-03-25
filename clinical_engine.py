@@ -13,3 +13,13 @@ def extract_gleason(text):
     if match: 
         return int(match.group(1))
     return None 
+
+def extract_psa(text): 
+    """
+    Extracts the PSA level as a float. Accounts for decimals and shorthand like 'PSA is 14.2' 
+    """
+    match = re.search(r"PSA\s*(?:of|is|level)?\s*[:\-]?\s*(\d+\.?\d*)", str(text), re.IGNORECASE) # (\.?\d*) enables that we capture floating point decimals, not just whole numbers
+    if match: 
+        return float(match.group(1))
+    return None 
+
