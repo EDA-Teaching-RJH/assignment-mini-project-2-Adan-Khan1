@@ -21,7 +21,7 @@ def extract_psa(text):
     match = re.search(r"PSA\s*(?:of|is|level)?\s*[:\-]?\s*(\d+\.?\d*)", str(text), re.IGNORECASE) # (\.?\d*) enables that we capture floating point decimals, not just whole numbers
     if match: 
         return float(match.group(1))
-    return None 
+    return None    
 
 def extract_t_stage(text): 
     """
@@ -31,3 +31,15 @@ def extract_t_stage(text):
     if match: 
         return match.group(1).upper()
     return None 
+
+def extract_volume(text): 
+    """
+    Extracts prostate volume in cc or grams
+    """
+    match = re.search(r"(?:prostate)?\s*volume\s*(?:of)?\s*(\d+\.?\d*)\s*(?:cc|ml|grams|g)", str(text), re.IGNORECASE)
+    if match: 
+        return float(match.group(1))
+    return None
+
+
+
