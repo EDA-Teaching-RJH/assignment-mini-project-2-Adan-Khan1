@@ -429,3 +429,7 @@ class EligibillApp(TkinterDnD_CTk):
 
         except Exception as e:
             messagebox.showerror("Export Error", f"Failed to save CSV: {str(e)}")
+
+if __name__ == "__main__":
+    app = EligibillApp()
+    app.mainloop()
