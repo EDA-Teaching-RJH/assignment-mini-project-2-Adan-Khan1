@@ -106,7 +106,7 @@ class UrologyPatient(PatientRecord):
 
         # Cascading OR: Extreme severity in a single metric forces trial inclusion, bypassing the need for perfect data 
         if safe_gleason >= 9 or "T4" in safe_t_stage or high_risk_count >= 2: 
-            self.status = "Eligible = CPG 5"
+            self.status = "Eligible - CPG 5"
             self.reason = "Included: high Risk (CPG 5) clinically identified"
         elif high_risk_count == 1: 
             self.status = "Eligible - CPG 4"
