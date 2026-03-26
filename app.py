@@ -103,15 +103,90 @@ class EligibillApp(TkinterDnD_CTk):
         email = self.entry_email.get().strip().lower()
         password = self.entry_pass.get()
 
-        if not email.endswith("@nhs.net"):
+        if not email.endswith("@nhs.net"):  # Gives the authentic feel that a clinician is using the application
             self.lbl_login_error.configure(text="Unauthorised domain. NHS @nhs.net credentials required.")
             return
         
-        if email == "admin@nhs.net" and password == "admin123": 
+        if email == "admin@nhs.net" and password == "admin123": # Ease of use as an "admin" is testing the prototype version to see if the app is good enough for their trust
             self.lbl_login_error.configure(text="") 
             self.show_frame("dashboard")
             self.entry_pass.delete(0, 'end')
         else: 
             self.lbl_login_error.configure(text="Invalid credentials. Please try again.")
 
-            
+
+    # ---------------------------------------------------------
+    # DASHBOARD SCREEN
+    # ---------------------------------------------------------
+    # FEATURE 3: The Dashboard creates visually appealing KPI cards and hooks up the Drag & Drop framework into the visual Dropzone
+
+    def build_dashboard(self): 
+        dash_container = ctk.CTkFrame(self, fg_color=BG_MAIN, corner_radius=0)
+        self.frames["dashboard"] = dash_container
+
+        # Header
+        header = ctk.CTkFrame(dash_container, fg_color="transparent")
+        header = ctk.CTkFrame(dash_container, fg_color="transparent")
+
+        title_box = ctk.CTkFrame(header, fg_color="transparent")
+        title_box.pack(side="left")
+        ctk.CTkLabel(title_box, text="Eligibill Pipeline", font=("Helvetica", 28, "bold"), text_color=TEXT_PRIMARY).pack(anchor="w")
+        ctk.CTkLabel(title_box, text="● System Online & Connected", font=("Helvetica", 12, "bold"), text_color=COLOR_SUCCESS).pack(anchor="w")
+
+        btn_logout = ctk.CTkButton(header, text="Logout", width=80, height=35, fg_color="transparent", border_width=1, border_color=BORDER, hover_color=BORDER, command=lambda: self.show_frame("login"))
+        btn_logout.pack(side="right")
+
+        # Stage 1: Ingestion
+        ing_panel = ctk.CTkFrame(dash_container, fg_color=BG_CARD, corner_radius=12, border_color=BORDER, border_width=1)
+        ing_panel.pack(fill="x", padx=40, pady=(0, 20))
+
+        ing_head = ctk.CTkFrame(ing_panel, fg_color="transparent")
+        ing_head.pack(fill="x", padx=20, pady=(20, 10))
+        ctk.CTkLabel(ing_head, text="01", font=("Courier", 14, "bold"), fg_color=BORDER, text_color=TEXT_MUTED, corner_radius=6, width=28, height=24).pack(side="left", padx=(0, 10))
+        ctk.CTkLabel(ing_head, text="Data Ingestion", font=("Helvetica", 16, "bold"), text_color=TEXT_PRIMARY).pack(side="left")
+
+
+        # Dropzone for the drag and drop function 
+        self.dropzone = ctk.CTkFrame(ing_panel, fg_color=BG_DROP, corner_radius=8, border_width=1, border_color=BORDER)
+        self.dropzone.pack(fill="x", padx=20, pady=(0, 25))
+
+        self.lbl_drop_text = ctk.CTkLabel(self.dropzone, text="Click to browse or Drag & drop .json dataset here", font=("Helvetica", 14), text_color=TEXT_MUTED)
+        self.lbl_drop_text.pack(pady=30)
+
+        # Clicking the dropzone opens file dialog, since it gives the user flexibility to do whichever method they prefer
+        self.lbl_drop_text.bind("<Button-1>", lambda e: self.select_file())
+        self.dropzone.bind("<Button-1>", lambda e: self.select_file())
+
+        # Bind Drag & Drop natively
+        self.dropzone.drop_target_register(DND_FILES)
+        self.dropzone.dnd_bind('<<Drop>>', self.handle_drop)
+
+
+        # File Selected Card (Hidden initially)
+        self.file_card = ctk.CTkFrame(ing_panel, fg_color=BG_DROP, corner_radius=8, border_width=1, border_color=BORDER)
+        
+        self.lbl_filename = ctk.CTkLabel(self.file_card, text="dataset.json", font=("Helvetica", 14, "bold"), text_color=TEXT_PRIMARY)
+        self.lbl_filename.pack(side="left", padx=20, pady=15)
+
+        btn_remove = ctk.CTkButton(self.file_card, text="✕", width=30, height=30, fg_color="transparent", hover_color=BORDER, command=self.remove_file)
+        btn_remove.pack(side="right", padx=10)
+
+        # KPIs
+        self.kpi_frame = ctk.CTkFrame(dash_container, fg_color="transparent")
+        self.kpi_frame.pack(fill="x", padx=40, pady=(0, 20))
+        self.kpi_frame.grid_columnconfigure((0,1,2,3), weight=1)
+
+        def create_kpi(parent, title, text_color, col):
+            card = ctk.CTkFrame(parent, fg_color=BG_CARD, corner_radius=12, border_color=BORDER, border_width=1, height=120)
+            card.grid(row=0, column=col, padx=(0 if col==0 else 10, 0 if col==3 else 10), sticky="ew")
+            card.pack_propagate(False)
+
+            ctk.CTkLabel(card, text=title, font=("Helvetica", 12, "bold"), text_color=TEXT_MUTED).pack(pady=(20, 5))
+            val = ctk.CTkLabel(card, text="0", font=("Courier", 38, "bold"), text_color=text_color)
+            val.pack()
+            return val
+
+        self.kpi_total = create_kpi(self.kpi_frame, "Total Processed", TEXT_PRIMARY, 0)
+        self.kpi_eligible = create_kpi(self.kpi_frame, "Eligible (CPG 2-5)", COLOR_SUCCESS, 1)
+        self.kpi_excluded = create_kpi(self.kpi_frame, "Excluded", COLOR_WARN, 2)
+        self.kpi_manual = create_kpi(self.kpi_frame, "Manual Review", COLOR_DANGER, 3)
