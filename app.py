@@ -190,3 +190,38 @@ class EligibillApp(TkinterDnD_CTk):
         self.kpi_eligible = create_kpi(self.kpi_frame, "Eligible (CPG 2-5)", COLOR_SUCCESS, 1)
         self.kpi_excluded = create_kpi(self.kpi_frame, "Excluded", COLOR_WARN, 2)
         self.kpi_manual = create_kpi(self.kpi_frame, "Manual Review", COLOR_DANGER, 3)
+
+        # Stage 2: Execution
+        exec_panel = ctk.CTkFrame(dash_container, fg_color=BG_CARD, corner_radius=12, border_color=BORDER, border_width=1)
+        exec_panel.pack(fill="x", padx=40, pady=0)
+
+        ex_head = ctk.CTkFrame(exec_panel, fg_color="transparent")
+        ex_head.pack(fill="x", padx=20, pady=(20, 10))
+        ctk.CTkLabel(ex_head, text="02", font=("Courier", 14, "bold"), fg_color=BORDER, text_color=TEXT_MUTED, corner_radius=6, width=28, height=24).pack(side="left", padx=(0, 10))
+        ctk.CTkLabel(ex_head, text="Pipeline Execution", font=("Helvetica", 16, "bold"), text_color=TEXT_PRIMARY).pack(side="left")
+
+        # Progress bar
+        self.progress_bar = ctk.CTkProgressBar(exec_panel, progress_color=COLOR_ACCENT, fg_color=BG_DROP, height=10, corner_radius=5)
+        self.progress_bar.pack(fill="x", padx=20, pady=(10, 5))
+        self.progress_bar.set(0)
+
+        self.lbl_status = ctk.CTkLabel(exec_panel, text="Awaiting dataset...", font=("Helvetica", 13), text_color=TEXT_MUTED)
+        self.lbl_status.pack(anchor="w", padx=20, pady=(0, 20))
+
+
+        # Buttons
+        self.btn_run = ctk.CTkButton(
+            exec_panel, text="Initialise Screening", command=self.run_pipeline_thread,
+            height=45, state="disabled", fg_color=COLOR_ACCENT, hover_color="#4281FF",
+            font=("Helvetica", 15, "bold"), corner_radius=8
+        )
+        self.btn_run.pack(fill="x", pady=(0, 10))
+
+        self.btn_save = ctk.CTkButton(
+            exec_panel, 
+            text="Download Audit Trail", 
+            command=self.open_export_dialog,
+            height=50,
+            fg_color=COLOR_SUCCESS, hover_color="#4AC75B", text_color=BG_MAIN,
+            font=("Helvetica", 16, "bold"), corner_radius=8
+        )
