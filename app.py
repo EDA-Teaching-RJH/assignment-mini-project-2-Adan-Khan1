@@ -335,3 +335,97 @@ class EligibillApp(TkinterDnD_CTk):
         except Exception as e:
             self.after(0, self.lbl_status.configure, {"text": f"Critical Error: {str(e)}", "text_color": COLOR_DANGER})
             self.after(0, self.btn_run.configure, {"state": "normal"})
+
+
+    # FEATURE 5: The Selective CSV Audit Trail Exporter. This allows the user to only download specific eligibilities
+    def show_save_button(self):
+        self.btn_run.pack_forget()
+        self.btn_save.pack(fill="x", pady=(10, 0))
+
+    def open_export_dialog(self):
+        if not self.processed_patients: 
+            messagebox.showerror("Error", "No processed data to save.")
+            return
+
+        dialog = ctk.CTkToplevel(self)
+        dialog.title("Export Options")
+
+        dialog_w = 450
+        dialog_h = 350
+
+        # Center relative to the main application window
+        self.update_idletasks()
+        main_x = self.winfo_rootx()
+        main_y = self.winfo_rooty()
+        main_w = self.winfo_width()
+        main_h = self.winfo_height()
+        x = main_x + (main_w // 2) - (dialog_w // 2)
+        y = main_y + (main_h // 2) - (dialog_h // 2)
+
+        dialog.geometry(f"{dialog_w}x{dialog_h}+{x}+{y}")
+        dialog.minsize(dialog_w, dialog_h)
+        dialog.configure(fg_color=BG_CARD)
+        dialog.transient(self)
+        dialog.grab_set()
+
+        ctk.CTkLabel(dialog, text="Select Export Categories", font=("Helvetica", 18, "bold"), text_color=TEXT_PRIMARY).pack(pady=(25, 20))
+
+        var_eligible = ctk.BooleanVar(value=True)
+        var_excluded = ctk.BooleanVar(value=False)
+        var_manual = ctk.BooleanVar(value=True)
+
+        chk_eligible = ctk.CTkCheckBox(dialog, text="Eligible Patients (CPG 2-5)", variable=var_eligible, fg_color=COLOR_SUCCESS, hover_color=COLOR_SUCCESS, text_color=TEXT_PRIMARY, font=("Helvetica", 14))
+        chk_eligible.pack(anchor="w", padx=50, pady=10)
+
+        chk_excluded = ctk.CTkCheckBox(dialog, text="Excluded Patients (Irrelevant/CPG 1)", variable=var_excluded, fg_color=COLOR_WARN, hover_color=COLOR_WARN, text_color=TEXT_PRIMARY, font=("Helvetica", 14))
+        chk_excluded.pack(anchor="w", padx=50, pady=10)
+
+        chk_manual = ctk.CTkCheckBox(dialog, text="Manual Review Patients", variable=var_manual, fg_color=COLOR_DANGER, hover_color=COLOR_DANGER, text_color=TEXT_PRIMARY, font=("Helvetica", 14))
+        chk_manual.pack(anchor="w", padx=50, pady=10)
+
+        def confirm_export():
+            self.save_csv_filtered(
+                export_eligible=var_eligible.get(),
+                export_excluded=var_excluded.get(),
+                export_manual=var_manual.get()
+            )
+            dialog.destroy()
+
+        btn_confirm = ctk.CTkButton(dialog, text="Export CSV to System", command=confirm_export, height=45, fg_color=COLOR_ACCENT, hover_color="#4281FF", font=("Helvetica", 14, "bold"))
+        btn_confirm.pack(fill="x", padx=50, pady=(30, 20))
+
+    def save_csv_filtered(self, export_eligible, export_excluded, export_manual):
+        output_filepath = filedialog.asksaveasfilename(
+            title="Save Audit Trail As", 
+            defaultextension=".csv", 
+            filetypes=[("CSV Files", "*.csv")],
+            initialfile="Eligibill_Cohort_Audit_Trail.csv"
+        )
+        if not output_filepath: return 
+
+        filtered_patients = []
+        for p in self.processed_patients:
+            status = p["Eligibility_Status"]
+            if "Eligible" in status and export_eligible:
+                filtered_patients.append(p)
+            elif "Ineligible" in status and export_excluded:
+                filtered_patients.append(p)
+            elif "Manual" in status and export_manual:
+                filtered_patients.append(p)
+
+        if not filtered_patients:
+            messagebox.showinfo("Export Empty", "No records matched your selected criteria.")
+            return
+
+        try:
+            with open(output_filepath, mode='w', encoding='utf-8', newline='') as outfile:
+                fieldnames = ["Patient_ID", "Age", "Gleason_Score", "PSA_Level", "T_Stage", "Prostate_Volume_cc", "Eligibility_Status", "Clinical_Rationale"]
+                writer = csv.DictWriter(outfile, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(filtered_patients)
+
+            self.lbl_status.configure(text=f"Saved successfully: {os.path.basename(output_filepath)}", text_color=COLOR_SUCCESS)
+            messagebox.showinfo("Export Successful", f"Audit trail successfully exported to:\n\n{output_filepath}\n\nExported {len(filtered_patients)} records.")
+
+        except Exception as e:
+            messagebox.showerror("Export Error", f"Failed to save CSV: {str(e)}")
