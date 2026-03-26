@@ -38,7 +38,7 @@ class EligibillApp(TkinterDnD_CTk):
         self.geometry("1000x800")
         self.minsize(900,700)
         self.configure(fg_color=BG_MAIN)
-        ctk.set_appearance_model("dark")
+        ctk.set_appearance_mode("dark")
 
         self.input_filepath = None
         self.processed_patients = []
@@ -62,7 +62,7 @@ class EligibillApp(TkinterDnD_CTk):
         login_container = ctk.CTkFrame(self, fg_color=BG_MAIN)
         self.frames["login"] = login_container
 
-        center_frame = ctk.CTkFrame(login_containier, fg_color="transparent")
+        center_frame = ctk.CTkFrame(login_container, fg_color="transparent")
         center_frame.place(relx=0.5, rely=0.5, anchor="center")
 
         #Header 
