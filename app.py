@@ -225,3 +225,113 @@ class EligibillApp(TkinterDnD_CTk):
             fg_color=COLOR_SUCCESS, hover_color="#4AC75B", text_color=BG_MAIN,
             font=("Helvetica", 16, "bold"), corner_radius=8
         )
+
+    # ---------------------------------------------------------
+    # INTERACTIONS & LOGIC
+    # ---------------------------------------------------------
+    # FEATURE 4: Multi-threaded Execution Pipeline. Uses Python Native Threads to execute process_cohort() in the background without freezing the UI otherwise moving the window will buffer the process
+    def handle_drop(self, event): 
+        filepath = event.data
+        if filepath.startswith('{') and filepath.endswith('}'):
+            filepath = filepath[1:-1] # Remove Tkinter brackets 
+
+        if filepath.lower().endswith('.json'):
+            self.set_active_file(filepath)
+        else:
+            messagebox.showwarning("Invalid File", "Please drop a .json clinical dataset.")
+
+    def select_file(self):
+        filepath = filedialog.askopenfilename(title="Select Raw Data JSON", filetypes=[("JSON Files", "*.json")])
+        if filepath:
+            self.set_active_file(filepath)
+
+    def set_active_file(self, filepath):
+        self.input_filepath = filepath
+        self.lbl_filename.configure(text=os.path.basename(filepath))
+
+        self.dropzone.pack_forget()
+        self.file_card.pack(fill="x", padx=20, pady=(0, 25))
+
+        self.btn_run.configure(state="normal")
+        self.lbl_status.configure(text="Ready to process cohort.", text_color=COLOR_ACCENT)
+
+        self.reset_pipeline()
+
+    def remove_file(self):
+        self.input_filepath = None
+        self.file_card.pack_forget()
+        self.dropzone.pack(fill="x", padx=20, pady=(0, 25))
+
+
+        self.btn_run.configure(state="disabled")
+        self.lbl_status.configure(text="Awaiting dataset...", text_color=TEXT_MUTED)
+        self.reset_pipeline()
+
+
+    def reset_pipeline(self):
+        self.btn_save.pack_forget()
+        self.btn_run.pack(fill="x", pady=(0, 10))
+        self.progress_bar.set(0)
+        self.processed_patients = []
+        self.metrics = {"total": 0, "eligible": 0, "excluded": 0, "manual": 0}
+        self.update_kpis()
+
+    def update_kpis(self):
+        self.kpi_total.configure(text=str(self.metrics["total"]))
+        self.kpi_eligible.configure(text=str(self.metrics["eligible"]))
+        self.kpi_excluded.configure(text=str(self.metrics["excluded"]))
+        self.kpi_manual.configure(text=str(self.metrics["manual"]))
+
+    def run_pipeline_thread(self):
+        if not self.input_filepath: return
+        self.btn_run.configure(state="disabled")
+        self.lbl_status.configure(text="Engine parsing array through NLG Regex...", text_color=COLOR_ACCENT)
+        threading.Thread(target=self.process_cohort, daemon=True).start()
+
+    def process_cohort(self):
+        try:
+            with open(self.input_filepath, mode='r', encoding='utf-8') as infile:
+                dataset = json.load(infile)
+                total_records = len(dataset)
+
+                for index, row in enumerate(dataset):
+                    raw_text = row.get('patient', '')
+                    pt_id = row.get('patient_uid', f"PMC_PT_{index+1}")
+
+                    if not raw_text: continue
+
+                    self.metrics["total"] += 1
+                    patient = UrologyPatient(patient_id=pt_id, raw_text=raw_text)
+                    patient.evaluate_eligibility()
+                    if "Eligible" in patient.status:
+                        self.metrics["eligible"] += 1
+                    elif "Ineligible" in patient.status:
+                        self.metrics["excluded"] += 1
+                    else:
+                        self.metrics["manual"] += 1
+
+                    self.processed_patients.append({
+                        "Patient_ID": patient.patient_id,
+                        "Age": patient.age,
+                        "Gleason_Score": patient.gleason,
+                        "PSA_Level": patient.psa,
+                        "T_Stage": patient.t_stage,
+                        "Prostate_Volume_cc": patient.prostate_volume,
+                        "Eligibility_Status": patient.status,
+                        "Clinical_Rationale": patient.reason
+                    })
+
+                    if index % 500 == 0:
+                        progress = index / max(1, total_records)
+                        self.after(0, self.progress_bar.set, progress)
+                        self.after(0, self.update_kpis)
+
+            self.after(0, self.progress_bar.set, 1.0)
+            self.after(0, self.update_kpis)
+            self.after(0, self.lbl_status.configure, {"text": "Pipeline Complete. Audit trail generated.", "text_color": COLOR_SUCCESS})
+            self.after(0, self.show_save_button)
+
+
+        except Exception as e:
+            self.after(0, self.lbl_status.configure, {"text": f"Critical Error: {str(e)}", "text_color": COLOR_DANGER})
+            self.after(0, self.btn_run.configure, {"state": "normal"})
